@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part-3 (Admin) — Close + Photos + Feedback</title>
+<style>
+  body{margin:0;font-family:Arial;background:#0b1220;color:#fff}
+  .wrap{max-width:980px;margin:auto;padding:18px}
+  .card{background:#111a2e;border:1px solid #233252;border-radius:14px;padding:16px;margin:12px 0}
+  h2,h3{margin:0 0 10px}
+  label{font-size:12px;opacity:.85;display:block;margin:10px 0 6px}
+  input,select,textarea,button{width:100%;padding:10px;border-radius:10px;border:1px solid #233252;background:#0d1528;color:#fff;outline:none}
+  textarea{min-height:90px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:750px){.row{grid-template-columns:1fr}}
+  button{background:#4f8cff;font-weight:bold;cursor:pointer;border:none;margin-top:12px}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .btn2{background:#1a2a4a;border:1px solid #233252}
+  .hint{font-size:12px;opacity:.8;margin-top:6px;line-height:1.4}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1a2a4a;border:1px solid #233252;font-size:12px;opacity:.95;margin:6px 6px 0 0}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  .box2{background:#0d1528;border:1px solid #233252;border-radius:12px;padding:10px;margin-top:10px}
+  .box2 pre{white-space:pre-wrap;margin:0}
+  .preview{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .thumb{width:120px;height:120px;border-radius:12px;border:1px solid #233252;object-fit:cover;background:#0d1528}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  .actions button{width:auto;padding:10px 12px;margin-top:0}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px}
+  .box{width:min(820px,100%);background:#111a2e;border:1px solid #233252;border-radius:14px;padding:16px}
+  .box pre{white-space:pre-wrap;background:#0d1528;border:1px solid #233252;padding:10px;border-radius:12px;margin:10px 0}
+  a{color:#9cc3ff}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h2>Admin Panel — Close Booking</h2>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Booking ID (ASSIGNED bookings)</label>
+        <select id="bookingId"></select>
+        <div class="actions">
+          <button class="btn2" type="button" id="btnReload">🔄 Reload</button>
+          <button class="btn2" type="button" id="btnDetails">📄 Load Details</button>
+        </div>
+        <div class="hint">Dropdown me sirf <b>ASSIGNED</b> bookings aayengi.</div>
+      </div>
+
+      <div>
+        <label>Work Done? *</label>
+        <select id="workDone">
+          <option value="">-- Select --</option>
+          <option value="YES">YES (Completed)</option>
+          <option value="NO">NO (Not done)</option>
+        </select>
+        <div class="hint" id="rulesHint"></div>
+      </div>
+    </div>
+
+    <div class="box2" id="detailsBox" style="display:none">
+      <div><b class="muted">Booking Details</b></div>
+      <pre class="mono" id="detailsText"></pre>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Estimate Amount (optional)</label>
+        <input id="estimateAmount" inputmode="decimal" placeholder="e.g. 1500">
+      </div>
+      <div>
+        <label>Paid Amount (optional)</label>
+        <input id="paidAmount" inputmode="decimal" placeholder="e.g. 1500">
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Payment Mode</label>
+        <select id="paymentMode">
+          <option value="">-- Select --</option>
+          <option value="CASH">CASH</option>
+          <option value="UPI">UPI</option>
+          <option value="CARD">CARD</option>
+          <option value="ONLINE">ONLINE</option>
+        </select>
+        <div class="hint">UPI/CARD/ONLINE par Payment Photo mandatory.</div>
+      </div>
+      <div>
+        <label>UPI Txn ID (optional)</label>
+        <input id="upiTxnId" placeholder="Txn id (if any)">
+      </div>
+    </div>
+
+    <label>Close Reason (mandatory if Work Done = NO)</label>
+    <textarea id="closeReason" placeholder="Why work not completed?"></textarea>
+
+    <h3 style="margin-top:14px">Photos</h3>
+    <div class="hint">Work Done = YES me <b>Before</b> & <b>After</b> mandatory.</div>
+
+    <div class="row">
+      <div>
+        <label>Photo 1 — Before Work *</label>
+        <input id="photoBefore" type="file" accept="image/*" capture="environment">
+        <div class="preview"><img id="prevBefore" class="thumb" alt=""></div>
+      </div>
+      <div>
+        <label>Photo 2 — After Work *</label>
+        <input id="photoAfter" type="file" accept="image/*" capture="environment">
+        <div class="preview"><img id="prevAfter" class="thumb" alt=""></div>
+      </div>
+    </div>
+
+    <div>
+      <label>Photo 3 — Payment Proof (mandatory if UPI/CARD/ONLINE)</label>
+      <input id="photoPayment" type="file" accept="image/*" capture="environment">
+      <div class="preview"><img id="prevPay" class="thumb" alt=""></div>
+    </div>
+
+    <label>Closed By (Admin name)</label>
+    <input id="closedBy" placeholder="Admin" value="Admin">
+
+    <button id="btnClose" disabled>✅ Close Booking</button>
+  </div>
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="box">
+    <h3 id="mt">Message</h3>
+    <pre id="mb"></pre>
+
+    <div class="actions" id="resultActions" style="display:none">
+      <button class="btn2" type="button" id="copyCust">📋 Copy Customer Msg</button>
+      <button class="btn2" type="button" id="openCustWA">🟢 Open Customer WhatsApp</button>
+      <button class="btn2" type="button" id="openFeedback">⭐ Open Feedback Link</button>
+    </div>
+
+    <button onclick="closeModal()">OK</button>
+  </div>
+</div>
+
+<script>
+/** ✅ Put your WebApp /exec URL here (same as Part-1) */
+const API_URL = "https://script.google.com/macros/s/AKfycby6J1PUZdgXAh-T7GVN5SJtw3lM_JeFUyDtj6Zk71ppOik-4wTkqW6zFyswwagNRs76UQ/exec";
+
+const $ = (id)=>document.getElementById(id);
+function openModal(title, body){
+  $("mt").textContent = title;
+  $("mb").textContent = body;
+  $("modal").style.display="flex";
+}
+function closeModal(){
+  $("modal").style.display="none";
+  $("resultActions").style.display="none";
+}
+
+async function getJSON(url){
+  const res = await fetch(url, { method:"GET" });
+  const txt = await res.text();
+  try{ return JSON.parse(txt); }catch(e){ throw new Error("Non-JSON:\n"+txt.slice(0,250)); }
+}
+async function postJSON(payload){
+  const res = await fetch(API_URL, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify(payload)
+  });
+  const txt = await res.text();
+  try{ return JSON.parse(txt); }catch(e){ throw new Error("Non-JSON:\n"+txt.slice(0,250)); }
+}
+
+function needPayPhoto(mode){
+  const m = String(mode||"").trim().toUpperCase();
+  return (m==="UPI" || m==="CARD" || m==="ONLINE");
+}
+
+function setBookingOptions(items){
+  const sel = $("bookingId");
+  sel.innerHTML = "";
+  if(!items || !items.length){
+    sel.innerHTML = `<option value="">-- No ASSIGNED bookings --</option>`;
+    return;
+  }
+  sel.innerHTML = `<option value="">-- Select Booking ID --</option>` +
+    items.map(x=>`<option value="${x.bookingId}">${x.bookingId} (${x.status})</option>`).join("");
+}
+
+let cachedDetails = null;
+let lastCustomerWA = "";
+let lastCustomerText = "";
+let lastFeedbackUrl = "";
+
+async function loadBookingList(){
+  $("btnClose").disabled = true;
+  $("detailsBox").style.display="none";
+  cachedDetails = null;
+
+  const out = await getJSON(API_URL + "?action=list&statuses=ASSIGNED");
+  if(!out || !out.ok) throw new Error(out?.error || "List failed");
+  setBookingOptions(out.items || []);
+  updateRulesHint();
+}
+
+function formatDetails(b){
+  const lines = [];
+  lines.push(`BookingID: ${b.BookingID || ""}`);
+  lines.push(`Status: ${b.Status || ""}`);
+  lines.push(`Service: ${b.Service || ""}`);
+  lines.push(`Date/Slot: ${b.Date || ""} | ${b.Slot || ""}`);
+  lines.push(`Customer: ${b.Name || ""}`);
+  lines.push(`Phone: ${b.Phone || ""}`);
+  lines.push(`Email: ${b.Email || ""}`);
+  lines.push(`Address: ${b.Address || ""}`);
+  lines.push(`Pincode: ${b.Pincode || ""}`);
+  lines.push(`Location: ${b.LocationLink || ""}`);
+  lines.push(`Problem: ${b.Problem || ""}`);
+  lines.push(`AssignedTo: ${b.AssignedTo || ""} (${b.AssignedPhone || ""})`);
+  return lines.join("\n");
+}
+
+async function loadDetails(){
+  const bid = $("bookingId").value.trim();
+  if(!bid){
+    openModal("❌ Error", "Please select Booking ID");
+    return;
+  }
+  const det = await getJSON(API_URL + "?action=details&bookingId=" + encodeURIComponent(bid));
+  if(!det || !det.ok) throw new Error(det?.error || "Details failed");
+  cachedDetails = det.booking;
+
+  $("detailsText").textContent = formatDetails(cachedDetails);
+  $("detailsBox").style.display = "block";
+  validateForm();
+}
+
+function updateRulesHint(){
+  const wd = $("workDone").value.trim();
+  const payMode = $("paymentMode").value.trim();
+  let t = "";
+  if(wd === "YES"){
+    t = "✅ Work Done = YES → Before & After photos mandatory.";
+    if(needPayPhoto(payMode)) t += " Payment photo bhi mandatory.";
+  }else if(wd === "NO"){
+    t = "❌ Work Done = NO → Close Reason mandatory. Photos optional.";
+  }else{
+    t = "Work done select karo.";
+  }
+  $("rulesHint").textContent = t;
+}
+
+function copyToClipboard(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    openModal("✅ Copied", "Message copied to clipboard.");
+  }).catch(()=>{
+    openModal("❌ Copy Failed", "Clipboard permission nahi mila. Manually select/copy karo.");
+  });
+}
+
+/** ---- Image helpers: file -> resized dataURL (fast) ---- */
+async function fileToDataURL(file, maxW=1280, maxH=1280, quality=0.82){
+  if(!file) return "";
+  const dataUrl = await new Promise((res, rej)=>{
+    const r = new FileReader();
+    r.onload = ()=>res(String(r.result));
+    r.onerror = ()=>rej(new Error("File read failed"));
+    r.readAsDataURL(file);
+  });
+
+  // If already small, send as-is (still ok)
+  const img = await new Promise((res, rej)=>{
+    const i = new Image();
+    i.onload = ()=>res(i);
+    i.onerror = ()=>rej(new Error("Image load failed"));
+    i.src = dataUrl;
+  });
+
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+  let nw=w, nh=h;
+  const scale = Math.min(maxW/w, maxH/h, 1);
+  nw = Math.round(w*scale);
+  nh = Math.round(h*scale);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = nw; canvas.height = nh;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, nw, nh);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function setPreview(inputId, imgId){
+  const inp = $(inputId);
+  inp.addEventListener("change", ()=>{
+    const f = inp.files && inp.files[0];
+    if(!f){ $(imgId).removeAttribute("src"); return; }
+    const url = URL.createObjectURL(f);
+    $(imgId).src = url;
+  });
+}
+setPreview("photoBefore","prevBefore");
+setPreview("photoAfter","prevAfter");
+setPreview("photoPayment","prevPay");
+
+function validateForm(){
+  const bid = $("bookingId").value.trim();
+  const wd = $("workDone").value.trim();
+  const payMode = $("paymentMode").value.trim();
+
+  let ok = !!bid && !!wd;
+
+  if(wd === "NO"){
+    ok = ok && $("closeReason").value.trim().length > 1;
+  }
+
+  if(wd === "YES"){
+    const before = $("photoBefore").files && $("photoBefore").files[0];
+    const after = $("photoAfter").files && $("photoAfter").files[0];
+    ok = ok && !!before && !!after;
+
+    if(needPayPhoto(payMode)){
+      const pay = $("photoPayment").files && $("photoPayment").files[0];
+      ok = ok && !!pay;
+    }
+  }
+
+  $("btnClose").disabled = !ok;
+}
+
+$("btnReload").onclick = async ()=>{
+  try{
+    $("btnReload").disabled = true;
+    await loadBookingList();
+  }catch(e){
+    openModal("❌ Error", String(e));
+  }finally{
+    $("btnReload").disabled = false;
+  }
+};
+
+$("btnDetails").onclick = async ()=>{
+  try{
+    $("btnDetails").disabled = true;
+    await loadDetails();
+  }catch(e){
+    openModal("❌ Error", String(e));
+  }finally{
+    $("btnDetails").disabled = false;
+  }
+};
+
+["bookingId","workDone","paymentMode","closeReason","estimateAmount","paidAmount","upiTxnId","closedBy"].forEach(id=>{
+  $(id).addEventListener("input", ()=>{ updateRulesHint(); validateForm(); });
+  $(id).addEventListener("change", ()=>{ updateRulesHint(); validateForm(); });
+});
+["photoBefore","photoAfter","photoPayment"].forEach(id=>{
+  $(id).addEventListener("change", ()=>{ updateRulesHint(); validateForm(); });
+});
+
+$("btnClose").onclick = async ()=>{
+  try{
+    const bid = $("bookingId").value.trim();
+    const wd = $("workDone").value.trim();
+    if(!bid || !wd) return;
+
+    $("btnClose").disabled = true;
+
+    // Read images only when needed
+    let photoBefore="", photoAfter="", photoPayment="";
+    if(wd === "YES"){
+      photoBefore = await fileToDataURL(($("photoBefore").files||[])[0]);
+      photoAfter  = await fileToDataURL(($("photoAfter").files||[])[0]);
+      if(needPayPhoto($("paymentMode").value)){
+        photoPayment = await fileToDataURL(($("photoPayment").files||[])[0]);
+      }
+    }
+
+    const out = await postJSON({
+      action:"close",
+      bookingId: bid,
+      workDone: wd,
+      closeReason: $("closeReason").value.trim(),
+      estimateAmount: $("estimateAmount").value.trim(),
+      paymentMode: $("paymentMode").value.trim(),
+      upiTxnId: $("upiTxnId").value.trim(),
+      paidAmount: $("paidAmount").value.trim(),
+      closedBy: $("closedBy").value.trim() || "Admin",
+      photoBefore,
+      photoAfter,
+      photoPayment
+    });
+
+    if(!out || !out.ok) throw new Error(out?.error || "Close failed");
+
+    lastCustomerWA = out.waLinkCustomer || "";
+    lastCustomerText = out.waTextCustomer || "";
+    lastFeedbackUrl = out.feedbackUrl || "";
+
+    let msg = `Closed ✅\nBookingID: ${bid}\nStatus: ${out.status}\n\nCustomer Message (WhatsApp/SMS):\n${lastCustomerText || "-"}`;
+    if(lastFeedbackUrl) msg += `\n\nFeedback URL:\n${lastFeedbackUrl}`;
+    if(out.photoBeforeUrl || out.photoAfterUrl || out.photoPaymentUrl){
+      msg += `\n\nSaved Photos (Drive URLs):\nBefore: ${out.photoBeforeUrl || "-"}\nAfter: ${out.photoAfterUrl || "-"}\nPayment: ${out.photoPaymentUrl || "-"}`;
+    }
+
+    openModal("✅ Booking Closed", msg);
+    $("resultActions").style.display="flex";
+
+    $("copyCust").onclick = ()=>copyToClipboard(lastCustomerText || "");
+    $("openCustWA").onclick = ()=>{ if(lastCustomerWA) window.open(lastCustomerWA, "_blank"); else openModal("❌", "Customer WhatsApp link blank"); };
+    $("openFeedback").onclick = ()=>{ if(lastFeedbackUrl) window.open(lastFeedbackUrl, "_blank"); else openModal("❌", "Feedback URL blank"); };
+
+    // Reset few fields
+    $("workDone").value = "";
+    $("closeReason").value = "";
+    $("estimateAmount").value = "";
+    $("paymentMode").value = "";
+    $("upiTxnId").value = "";
+    $("paidAmount").value = "";
+    $("photoBefore").value = "";
+    $("photoAfter").value = "";
+    $("photoPayment").value = "";
+    $("prevBefore").removeAttribute("src");
+    $("prevAfter").removeAttribute("src");
+    $("prevPay").removeAttribute("src");
+    $("detailsBox").style.display="none";
+    cachedDetails = null;
+
+    // refresh list (closed booking will disappear from ASSIGNED)
+    await loadBookingList();
+    updateRulesHint();
+    validateForm();
+
+  }catch(e){
+    openModal("❌ Error", String(e));
+    validateForm();
+  }
+};
+
+(async function init(){
+  try{
+    await loadBookingList();
+    updateRulesHint();
+  }catch(e){
+    openModal("❌ Error", String(e) + "\n\nAPI_URL check karo aur WebApp access 'Anyone' hona chahiye.");
+  }
+})();
+</script>
+</body>
+</html>

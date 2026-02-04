@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Part-3 (Technician) — Close + Photos + Feedback</title>
+<style>
+  body{margin:0;font-family:Arial;background:#ffffff;color:#111}
+  .wrap{max-width:980px;margin:auto;padding:18px}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  h2{margin:6px 0 14px}
+  h3{margin:12px 0 8px}
+  label{font-size:12px;opacity:.9;display:block;margin:10px 0 6px;color:#374151}
+  input,select,textarea,button{
+    width:100%;padding:10px;border-radius:10px;border:1px solid #d1d5db;background:#fff;color:#111;outline:none;box-sizing:border-box
+  }
+  textarea{min-height:90px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:750px){.row{grid-template-columns:1fr}}
+  button{background:#2563eb;font-weight:bold;cursor:pointer;border:none;color:#fff}
+  button:disabled{opacity:.6;cursor:not-allowed}
+  .btn2{background:#f3f4f6;border:1px solid #d1d5db;color:#111}
+  .hint{font-size:12px;color:#6b7280;line-height:1.4;margin-top:6px}
+  .boxinfo{background:#f9fafb;border:1px dashed #d1d5db;border-radius:12px;padding:10px;margin-top:10px}
+  .kv{display:grid;grid-template-columns:160px 1fr;gap:8px;font-size:13px}
+  @media(max-width:650px){.kv{grid-template-columns:1fr}}
+  .kv div:first-child{color:#374151;font-weight:bold}
+  .kv a{color:#2563eb;text-decoration:none}
+  .req{color:#dc2626;font-weight:bold}
+  .hide{display:none !important;}
+  .center{max-width:520px;margin:40px auto}
+
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px}
+  .mcard{width:min(640px,100%);background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+  .mcard pre{white-space:pre-wrap;background:#f3f4f6;border:1px solid #e5e7eb;padding:10px;border-radius:12px;margin:10px 0;color:#111}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h2>Technician — Close Booking</h2>
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="card center">
+    <h3 style="margin-top:0">Login</h3>
+    <label>Phone *</label>
+    <input id="loginPhone" inputmode="numeric" maxlength="10" placeholder="10 digit phone">
+    <label>Password *</label>
+    <input id="loginPass" type="password" placeholder="Password">
+    <button id="btnLogin">✅ Login</button>
+    <div class="hint"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="mainBox" class="hide">
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <label>Booking ID *</label>
+          <select id="bookingId">
+            <option value="">Loading...</option>
+          </select>
+          <div class="hint"></div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:end">
+          <button id="btnLoad" class="btn2" type="button" style="width:100%">Load Details</button>
+        </div>
+      </div>
+
+      <div id="details" class="boxinfo hide">
+        <h3 style="margin:0 0 8px">Booking Details</h3>
+        <div class="kv">
+          <div>Customer</div><div id="dName">-</div>
+          <div>Mobile</div><div id="dPhone">-</div>
+          <div>Email</div><div id="dEmail">-</div>
+          <div>Address</div><div id="dAddr">-</div>
+          <div>Pincode</div><div id="dPin">-</div>
+          <div>Service</div><div id="dService">-</div>
+          <div>Date/Slot</div><div id="dSlot">-</div>
+          <div>Problem</div><div id="dProb">-</div>
+          <div>Location</div><div id="dLoc">-</div>
+          <div>Assigned Tech</div><div id="dTech">-</div>
+          <div>Status</div><div id="dStatus">-</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Close Form</h3>
+
+      <div class="row">
+        <div>
+          <label>Work Done? <span class="req">*</span></label>
+          <select id="workDone">
+            <option value="">Select</option>
+            <option value="YES">YES</option>
+            <option value="NO">NO</option>
+          </select>
+        </div>
+        <div>
+          <label>Closed By</label>
+          <input id="closedBy" value="Technician">
+        </div>
+      </div>
+
+      <label>Customer Unique Code (4 digit) <span class="req">*</span></label>
+      <input id="closeCode" inputmode="numeric" maxlength="4" placeholder="Enter 4 digit code">
+      <div class="hint"></div>
+
+      <div id="noWorkBox" class="hide">
+        <label>Reason (Work not done) <span class="req">*</span></label>
+        <textarea id="closeReason" placeholder="Work not completed reason"></textarea>
+      </div>
+
+      <div id="yesWorkBox" class="hide">
+        <div class="row">
+          <div>
+            <label>Estimate Amount</label>
+            <input id="estimateAmount" inputmode="numeric" placeholder="e.g. 1200">
+          </div>
+          <div>
+            <label>Paid Amount</label>
+            <input id="paidAmount" inputmode="numeric" placeholder="e.g. 1200">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Payment Mode</label>
+            <select id="paymentMode">
+              <option value="">Select</option>
+              <option value="CASH">CASH</option>
+              <option value="UPI">UPI</option>
+              <option value="CARD">CARD</option>
+              <option value="ONLINE">ONLINE</option>
+            </select>
+            <div class="hint">UPI/CARD/ONLINE पर payment photo mandatory हो जाएगी.</div>
+          </div>
+          <div>
+            <label>UPI Txn ID (optional)</label>
+            <input id="upiTxnId" placeholder="Txn id">
+          </div>
+        </div>
+
+        <label>Note (optional)</label>
+        <textarea id="adminNote" placeholder="Any note..."></textarea>
+
+        <h3>Photos</h3>
+
+        <label>Before Work Photos (3) <span class="req">*</span></label>
+        <div id="beforeWrap"></div>
+        <button type="button" class="btn2" id="btnAddBefore">➕ Add Before Photo</button>
+        <div class="hint">Work Done = YES पर 3 Before photos mandatory.</div>
+
+        <label style="margin-top:14px">After Work Photos (3) <span class="req">*</span></label>
+        <div id="afterWrap"></div>
+        <button type="button" class="btn2" id="btnAddAfter">➕ Add After Photo</button>
+        <div class="hint">Work Done = YES पर 3 After photos mandatory.</div>
+
+        <div id="payPhotoBox" class="hide" style="margin-top:14px">
+          <label>Payment Proof Photo <span class="req">*</span></label>
+          <input id="photoPayment" type="file" accept="image/*">
+          <div class="hint">UPI/CARD/ONLINE पर mandatory (Cash पर नहीं).</div>
+        </div>
+      </div>
+
+      <button id="btnClose" disabled>✅ Close Booking</button>
+
+      <div id="resultBox" class="boxinfo hide">
+        <h3 style="margin:0 0 8px">Result</h3>
+        <div class="kv">
+          <div>Close Status</div><div id="rStatus">-</div>
+          <div>Feedback URL</div><div id="rFeedback">-</div>
+          <div>WhatsApp Link</div><div id="rWA">-</div>
+          <div>WhatsApp Text</div><div><textarea id="rWAText" readonly></textarea></div>
+        </div>
+        <div class="hint">WhatsApp अभी manual है — link open करके send कर दें.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="mcard">
+    <h3 id="mt">Message</h3>
+    <pre id="mb"></pre>
+    <button onclick="closeModal()">OK</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycby6J1PUZdgXAh-T7GVN5SJtw3lM_JeFUyDtj6Zk71ppOik-4wTkqW6zFyswwagNRs76UQ/exec";
+
+const $ = (id)=>document.getElementById(id);
+function openModal(title, body){ $("mt").textContent=title; $("mb").textContent=body; $("modal").style.display="flex"; }
+function closeModal(){ $("modal").style.display="none"; }
+
+let TECH_TOKEN = "";
+
+function digitsOnly(el, max){
+  el.addEventListener("input", ()=>{ el.value = el.value.replace(/\D/g,"").slice(0,max); updateCloseBtn(); });
+}
+digitsOnly($("loginPhone"), 10);
+digitsOnly($("closeCode"), 4);
+digitsOnly($("estimateAmount"), 10);
+digitsOnly($("paidAmount"), 10);
+
+function needPayPhoto(){
+  const m = String($("paymentMode").value||"").toUpperCase();
+  return (m==="UPI" || m==="CARD" || m==="ONLINE");
+}
+
+function showWorkBoxes(){
+  const v = $("workDone").value;
+  $("yesWorkBox").classList.toggle("hide", v!=="YES");
+  $("noWorkBox").classList.toggle("hide", v!=="NO");
+  $("payPhotoBox").classList.toggle("hide", !(v==="YES" && needPayPhoto()));
+  updateCloseBtn();
+}
+$("workDone").addEventListener("change", showWorkBoxes);
+$("paymentMode").addEventListener("change", ()=>{
+  $("payPhotoBox").classList.toggle("hide", !($("workDone").value==="YES" && needPayPhoto()));
+  updateCloseBtn();
+});
+
+["bookingId","closeReason","adminNote","upiTxnId","closedBy"].forEach(id=>{
+  $(id).addEventListener("input", updateCloseBtn);
+  $(id).addEventListener("change", updateCloseBtn);
+});
+["photoPayment"].forEach(id=>{
+  $(id).addEventListener("change", updateCloseBtn);
+});
+
+function makePhotoInput(id){
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  input.id = id;
+  input.addEventListener("change", updateCloseBtn);
+  return input;
+}
+function rebuildPhotoUI(){
+  $("beforeWrap").innerHTML = "";
+  $("afterWrap").innerHTML = "";
+  for(let i=1;i<=3;i++){
+    $("beforeWrap").appendChild(makePhotoInput("before_" + i));
+  }
+  for(let i=1;i<=3;i++){
+    $("afterWrap").appendChild(makePhotoInput("after_" + i));
+  }
+}
+rebuildPhotoUI();
+
+$("btnAddBefore").addEventListener("click", ()=>{
+  for(let i=1;i<=3;i++){
+    const el = $("before_" + i);
+    if(!el.files || !el.files[0]){ el.click(); return; }
+  }
+  openModal("✅ Done", "Before photos already 3 selected.");
+});
+$("btnAddAfter").addEventListener("click", ()=>{
+  for(let i=1;i<=3;i++){
+    const el = $("after_" + i);
+    if(!el.files || !el.files[0]){ el.click(); return; }
+  }
+  openModal("✅ Done", "After photos already 3 selected.");
+});
+
+function updateCloseBtn(){
+  const bid = $("bookingId").value.trim();
+  const wd = $("workDone").value.trim();
+  const code = $("closeCode").value.trim();
+
+  if(!TECH_TOKEN || !bid || !wd || !/^\d{4}$/.test(code)){
+    $("btnClose").disabled = true; return;
+  }
+  if(wd==="NO"){
+    $("btnClose").disabled = !($("closeReason").value.trim().length >= 2);
+    return;
+  }
+
+  // YES => Before 3 + After 3 mandatory
+  for(let i=1;i<=3;i++){
+    const b = $("before_" + i);
+    const a = $("after_" + i);
+    if(!b.files || !b.files[0]){ $("btnClose").disabled = true; return; }
+    if(!a.files || !a.files[0]){ $("btnClose").disabled = true; return; }
+  }
+
+  if(needPayPhoto()){
+    const payOk = $("photoPayment").files && $("photoPayment").files[0];
+    $("btnClose").disabled = !payOk;
+    return;
+  }
+  $("btnClose").disabled = false;
+}
+
+async function fetchJson(url){
+  const res = await fetch(url, {method:"GET"});
+  const txt = await res.text();
+  try{ return JSON.parse(txt); } catch(e){ throw new Error("Non-JSON: " + txt.slice(0,200)); }
+}
+
+async function postJson(payload){
+  const res = await fetch(API_URL, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body: JSON.stringify(payload)
+  });
+  const txt = await res.text();
+  try{ return JSON.parse(txt); } catch(e){ throw new Error("Non-JSON: " + txt.slice(0,200)); }
+}
+
+async function loadBookings(){
+  $("bookingId").innerHTML = `<option value="">Loading...</option>`;
+  const out = await postJson({ action:"listTech", token: TECH_TOKEN, statuses:"ASSIGNED" });
+  if(!out || !out.ok) throw new Error(out?.error || "Failed to load list");
+  const items = out.items || [];
+  if(!items.length){
+    $("bookingId").innerHTML = `<option value="">No assigned bookings</option>`;
+    return;
+  }
+  $("bookingId").innerHTML =
+    `<option value="">Select Booking</option>` +
+    items.map(x=>`<option value="${x.bookingId}">${x.bookingId} (${x.status})</option>`).join("");
+}
+
+function setText(id, val){ $(id).textContent = (val===null||val===undefined||val==="") ? "-" : String(val); }
+function setHtml(id, html){ $(id).innerHTML = html; }
+
+$("btnLogin").addEventListener("click", async ()=>{
+  try{
+    const phone = $("loginPhone").value.trim();
+    const password = $("loginPass").value.trim();
+    if(!/^\d{10}$/.test(phone)) return openModal("❌ Error","Enter 10 digit phone");
+    if(!password) return openModal("❌ Error","Enter password");
+
+    $("btnLogin").disabled = true;
+    $("btnLogin").textContent = "Logging in...";
+
+    const out = await postJson({ action:"techLogin", phone, password });
+    if(!out || !out.ok) throw new Error(out?.error || "Login failed");
+
+    TECH_TOKEN = out.token;
+
+    $("loginBox").classList.add("hide");
+    $("mainBox").classList.remove("hide");
+    $("closedBy").value = out.name || "Technician";
+
+    await loadBookings();
+    updateCloseBtn();
+  }catch(e){
+    openModal("❌ Login Error", String(e.message || e));
+  }finally{
+    $("btnLogin").disabled = false;
+    $("btnLogin").textContent = "✅ Login";
+  }
+});
+
+$("btnLoad").addEventListener("click", async ()=>{
+  const bid = $("bookingId").value.trim();
+  if(!bid){ openModal("❌ Required", "Please select Booking ID"); return; }
+  try{
+    $("btnLoad").disabled = true;
+    $("btnLoad").textContent = "Loading...";
+
+    const out = await fetchJson(API_URL + `?action=details&bookingId=${encodeURIComponent(bid)}`);
+    if(!out || !out.ok) throw new Error(out?.error || "Details not found");
+    const b = out.booking || {};
+
+    $("details").classList.remove("hide");
+    setText("dName", b.Name);
+    setText("dPhone", b.Phone);
+    setText("dEmail", b.Email);
+    setText("dAddr", b.Address);
+    setText("dPin", b.Pincode);
+    setText("dService", b.Service);
+    setText("dSlot", `${b.Date||"-"} | ${b.Slot||"-"}`);
+    setText("dProb", b.Problem || "-");
+    setText("dTech", (b.AssignedTo ? `${b.AssignedTo} (${b.AssignedPhone||"-"})` : "-"));
+    setText("dStatus", b.Status);
+
+    if(b.LocationLink){
+      setHtml("dLoc", `<a href="${b.LocationLink}" target="_blank" rel="noopener">Open Map</a>`);
+    }else{
+      setText("dLoc", "-");
+    }
+
+    $("resultBox").classList.add("hide");
+    $("rWAText").value = "";
+    setText("rStatus","-");
+    setText("rFeedback","-");
+    setText("rWA","-");
+
+  }catch(e){
+    openModal("❌ Error", String(e.message || e));
+  }finally{
+    $("btnLoad").disabled = false;
+    $("btnLoad").textContent = "Load Details";
+    updateCloseBtn();
+  }
+});
+
+function fileToDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>resolve(String(fr.result||""));
+    fr.onerror = ()=>reject(new Error("File read failed"));
+    fr.readAsDataURL(file);
+  });
+}
+
+function resetCloseForm(){
+  $("workDone").value="";
+  $("closeCode").value="";
+  $("closeReason").value="";
+  $("estimateAmount").value="";
+  $("paidAmount").value="";
+  $("paymentMode").value="";
+  $("upiTxnId").value="";
+  $("adminNote").value="";
+  for(let i=1;i<=3;i++){
+    $("before_" + i).value = "";
+    $("after_" + i).value = "";
+  }
+  $("photoPayment").value="";
+  $("yesWorkBox").classList.add("hide");
+  $("noWorkBox").classList.add("hide");
+  $("payPhotoBox").classList.add("hide");
+  updateCloseBtn();
+}
+
+$("btnClose").addEventListener("click", async ()=>{
+  const bid = $("bookingId").value.trim();
+  if(!bid){ openModal("❌ Required","Booking ID missing"); return; }
+
+  try{
+    $("btnClose").disabled = true;
+    $("btnClose").textContent = "Closing...";
+
+    const workDone = $("workDone").value.trim();
+    const payload = {
+      action:"close",
+      token: TECH_TOKEN,                 // ✅ TECH TOKEN
+      bookingId: bid,
+      workDone,
+      customerCode: $("closeCode").value.trim(),
+      closeReason: $("closeReason").value.trim(),
+      estimateAmount: $("estimateAmount").value.trim(),
+      paymentMode: $("paymentMode").value.trim(),
+      upiTxnId: $("upiTxnId").value.trim(),
+      paidAmount: $("paidAmount").value.trim(),
+      closedBy: $("closedBy").value.trim() || "Technician",
+      adminNote: $("adminNote").value.trim()
+    };
+
+    if(workDone==="YES"){
+      const beforePhotos = [];
+      const afterPhotos = [];
+      for(let i=1;i<=3;i++){
+        beforePhotos.push(await fileToDataUrl($("before_" + i).files[0]));
+        afterPhotos.push(await fileToDataUrl($("after_" + i).files[0]));
+      }
+      payload.beforePhotos = beforePhotos;
+      payload.afterPhotos = afterPhotos;
+
+      if(needPayPhoto()){
+        payload.photoPayment = await fileToDataUrl($("photoPayment").files[0]);
+      }
+    }
+
+    const out = await postJson(payload);
+    if(!out || !out.ok) throw new Error(out?.error || "Close failed");
+
+    $("resultBox").classList.remove("hide");
+    setText("rStatus", out.status || "OK");
+
+    if(out.feedbackUrl){
+      setHtml("rFeedback", `<a href="${out.feedbackUrl}" target="_blank" rel="noopener">${out.feedbackUrl}</a>`);
+    }else{
+      setText("rFeedback","-");
+    }
+
+    if(out.waLinkCustomer){
+      setHtml("rWA", `<a href="${out.waLinkCustomer}" target="_blank" rel="noopener">Open WhatsApp</a>`);
+    }else{
+      setText("rWA","-");
+    }
+
+    $("rWAText").value = out.waTextCustomer || "";
+    openModal("✅ Closed", "Booking closed successfully.");
+
+    resetCloseForm();
+    $("details").classList.add("hide");
+    await loadBookings();
+
+  }catch(e){
+    openModal("❌ Error", String(e.message || e));
+  }finally{
+    $("btnClose").textContent = "✅ Close Booking";
+    updateCloseBtn();
+  }
+});
+</script>
+</body>
+</html>

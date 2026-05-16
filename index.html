@@ -79,6 +79,23 @@
   }
   .vuBtn:hover{filter:brightness(1.03)}
   .vuNote{margin-top:10px;color:rgba(255,255,255,.72);font-size:12px;text-align:center;position:relative;z-index:1}
+
+  .closeSubmitWrap{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    padding:18px;background:rgba(0,0,0,.72);z-index:999998;backdrop-filter:blur(5px)
+  }
+  .closeSubmitBox{
+    width:min(360px,100%);background:#fff;border-radius:18px;padding:24px 18px;
+    text-align:center;box-shadow:0 18px 55px rgba(0,0,0,.35);color:#111
+  }
+  .closeSpinner{
+    width:66px;height:66px;border-radius:50%;margin:0 auto 14px;
+    border:7px solid #f3f4f6;border-top-color:#f6c10a;animation:closeSpin .85s linear infinite
+  }
+  .closeSubmitTitle{font-size:22px;font-weight:900;margin:0 0 8px;color:#111}
+  .closeSubmitText{font-size:13px;color:#374151;line-height:1.45;margin:0}
+  @keyframes closeSpin{to{transform:rotate(360deg)}}
+
 </style>
 </head>
 <body>
@@ -315,6 +332,15 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+
+<div class="closeSubmitWrap" id="closeSubmitModal">
+  <div class="closeSubmitBox">
+    <div class="closeSpinner"></div>
+    <h3 class="closeSubmitTitle">Closing Booking...</h3>
+    <p class="closeSubmitText">Please wait. Your booking is being submitted.</p>
   </div>
 </div>
 
@@ -900,6 +926,228 @@ try{ logo = await loadImageAsDataUrl("Mylogo.png"); }catch(e){}
   };
 }
 
+
+function showCloseSubmitPopup(){
+  const m = document.getElementById("closeSubmitModal");
+  if(m) m.style.display = "flex";
+}
+function hideCloseSubmitPopup(){
+  const m = document.getElementById("closeSubmitModal");
+  if(m) m.style.display = "none";
+}
+
+function compressImageFile(file, maxW=1000, quality=0.62){
+  return new Promise((resolve, reject)=>{
+    if(!file) return resolve("");
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = ()=>{
+      try{
+        let w = img.width || 1;
+        let h = img.height || 1;
+        if(w > maxW || h > maxW){
+          const ratio = Math.min(maxW / w, maxW / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      }catch(e){
+        URL.revokeObjectURL(url);
+        reject(e);
+      }
+    };
+    img.onerror = ()=>{
+      URL.revokeObjectURL(url);
+      reject(new Error("Image compression failed"));
+    };
+    img.src = url;
+  });
+}
+
+async function generateClosePdfDataFromSnapshot(snap, beforeDataUrls, afterDataUrls){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:"p", unit:"mm", format:"a4"});
+  let logo = "";
+  try{ logo = await loadImageAsDataUrl("Mylogo.png"); }catch(e){}
+
+  const bookingId = snap.bookingId || "Booking";
+  const customerName = snap.customerName || "Customer";
+  const fileName = `${safeFilePart(customerName)}-${safeFilePart(bookingId)}.pdf`;
+  const now = new Date();
+  const reportDate = `${now.toLocaleDateString("en-GB")} ${now.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}`;
+
+  if(logo){ doc.addImage(logo, "PNG", 10, 10, 42, 12); }
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17,17,17);
+  doc.setFontSize(18);
+  doc.text("Service Report", 195, 16, {align:"right"});
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(80,80,80);
+  doc.text(`Date: ${reportDate}`, 195, 21, {align:"right"});
+  doc.text(`Booking ID: ${bookingId}`, 195, 25, {align:"right"});
+  doc.setDrawColor(17,17,17);
+  doc.setFillColor(246,193,10);
+  doc.roundedRect(160, 29, 35, 10, 5, 5, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(17,17,17);
+  doc.setFontSize(9);
+  doc.text("CLOSED", 177.5, 35.5, {align:"center"});
+
+  doc.setDrawColor(210,210,210);
+  doc.setFillColor(255,253,244);
+  doc.roundedRect(10, 42, 88, 48, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("From", 16, 50);
+  doc.setDrawColor(230,230,230); doc.line(14, 54, 94, 54);
+  doc.setFontSize(8);
+  doc.text("Nimaay Business Solution LLP", 16, 61);
+  doc.setFont("helvetica", "normal");
+  doc.text("311, 3rd Floor ARG North Avenue", 16, 67);
+  doc.text("Road No 9A, VKI Area, Jaipur, Rajasthan 302013", 16, 73);
+  doc.text("+91 99294 66404", 16, 79);
+  doc.text("Email: nimaaygroup@gmail.com", 16, 85);
+
+  doc.setDrawColor(210,210,210);
+  doc.setFillColor(255,253,244);
+  doc.roundedRect(105, 42, 90, 48, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Customer", 111, 50);
+  doc.setDrawColor(230,230,230); doc.line(109, 54, 191, 54);
+  doc.setFontSize(8);
+  doc.text(customerName, 111, 61);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Phone: ${snap.phone || "-"}`, 111, 67);
+  doc.text(`Email: ${snap.email || "-"}`, 111, 73);
+  doc.text(`Address: ${snap.address || "-"}`.slice(0, 58), 111, 79);
+  doc.text(`Pincode: ${snap.pincode || "-"}`, 111, 85);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Booking Details", 10, 103);
+  doc.setDrawColor(17,17,17); doc.line(10, 106, 195, 106);
+
+  const rows = [
+    ["Service", snap.service], ["Date / Slot", snap.dateSlot], ["Problem", snap.problem],
+    ["Assigned Technician", snap.tech], ["Closed By", snap.closedBy], ["Work Done", snap.workDone],
+    ["Estimate Amount", snap.estimateAmount], ["Paid Amount", snap.paidAmount], ["Payment Mode", snap.paymentMode],
+    ["UPI Txn ID", snap.upiTxnId], ["Customer Code", snap.customerCode], ["Inverter Status", snap.inverterStatus],
+    ["Structure", snap.structureStatus], ["Wire and Cable", snap.wireCableStatus], ["Earthing", snap.earthingStatus],
+    ["Foundation", snap.foundationStatus], ["Last Reading", snap.lastReading], ["Current Reading", snap.currentReading],
+    ["Total Generation", snap.totalGeneration], ["Reason", snap.closeReason], ["Note", snap.adminNote]
+  ];
+  let y = 109;
+  rows.forEach(([k,v])=>{
+    doc.setDrawColor(214,214,214);
+    doc.setFillColor(255,247,214); doc.rect(10, y, 58, 7, "FD");
+    doc.setFillColor(255,255,255); doc.rect(68, y, 127, 7, "FD");
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(17,17,17);
+    doc.text(String(k || "-"), 13, y + 4.7);
+    doc.setFont("helvetica", "normal"); doc.text(String(v || "-").slice(0, 75), 71, y + 4.7);
+    y += 7;
+  });
+  doc.setDrawColor(220,220,220); doc.line(10, y + 6, 195, y + 6);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(68,68,68);
+  doc.text("Customer Care No.: 9660019642   |   Customer Care Email: nimaaygroup@gmail.com", 102.5, y + 12, {align:"center"});
+
+  doc.addPage();
+  doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.setTextColor(17,17,17);
+  doc.text("Work Photos", 10, 15);
+  let sy = 24;
+  for(const section of [
+    {title:"Before Photos", imgs:beforeDataUrls, short:"Before"},
+    {title:"After Photos", imgs:afterDataUrls, short:"After"}
+  ]){
+    doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text(section.title, 10, sy); sy += 4;
+    for(let i=0;i<4;i++){
+      const x = (i % 2 === 0) ? 10 : 108;
+      if(i % 2 === 0 && i > 0) sy += 62;
+      doc.setDrawColor(214,214,214); doc.setFillColor(255,253,244); doc.roundedRect(x, sy, 92, 56, 2, 2, "FD");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.text(`${section.short} ${i+1}`, x + 46, sy + 5, {align:"center"});
+      if(section.imgs[i]){
+        doc.setFillColor(255,255,255); doc.roundedRect(x + 3, sy + 8, 86, 45, 2, 2, "FD");
+        doc.addImage(section.imgs[i], "JPEG", x + 3, sy + 8, 86, 45);
+      }
+    }
+    sy += 70;
+  }
+  const blob = doc.output("blob");
+  const dataUrl = await blobToDataUrl(blob);
+  return { fileName, dataUrl };
+}
+
+function makeCloseSnapshot(){
+  return {
+    bookingId: $("bookingId").value.trim(),
+    customerName: $("dName").textContent.trim() || "Customer",
+    phone: $("dPhone").textContent.trim() || "-",
+    email: $("dEmail").textContent.trim() || "-",
+    address: $("dAddr").textContent.trim() || "-",
+    pincode: $("dPin").textContent.trim() || "-",
+    service: $("dService").textContent.trim() || "-",
+    dateSlot: $("dSlot").textContent.trim() || "-",
+    problem: $("dProb").textContent.trim() || "-",
+    tech: $("dTech").textContent.trim() || "-",
+    closedBy: $("closedBy").value.trim() || "Technician",
+    workDone: $("workDone").value.trim(),
+    estimateAmount: $("estimateAmount").value.trim() || "-",
+    paidAmount: $("paidAmount").value.trim() || "-",
+    paymentMode: $("paymentMode").value.trim() || "-",
+    upiTxnId: $("upiTxnId").value.trim() || "-",
+    customerCode: $("closeCode").value.trim() || "-",
+    closeReason: $("closeReason").value.trim() || "-",
+    adminNote: $("adminNote").value.trim() || "-",
+    inverterStatus: $("inverterStatus").value.trim() || "-",
+    structureStatus: $("structureStatus").value.trim() || "-",
+    wireCableStatus: $("wireCableStatus").value.trim() || "-",
+    earthingStatus: $("earthingStatus").value.trim() || "-",
+    foundationStatus: $("foundationStatus").value.trim() || "-",
+    lastReading: $("lastReading").value.trim() || "-",
+    currentReading: $("currentReading").value.trim() || "-",
+    totalGeneration: $("totalGeneration").value.trim() || "-"
+  };
+}
+
+async function uploadCloseAssetsInBackground(assetPack){
+  try{
+    if(assetPack.workDone === "YES"){
+      const beforePhotos = [];
+      const afterPhotos = [];
+      for(let i=0;i<4;i++) beforePhotos.push(await compressImageFile(assetPack.beforeFiles[i]));
+      for(let i=0;i<4;i++) afterPhotos.push(await compressImageFile(assetPack.afterFiles[i]));
+
+      let photoPayment = "";
+      if(assetPack.paymentFile) photoPayment = await compressImageFile(assetPack.paymentFile);
+
+      const pdfPack = await generateClosePdfDataFromSnapshot(assetPack.snapshot, beforePhotos, afterPhotos);
+
+      await postJson({
+        action:"closeAssets",
+        token: TECH_TOKEN,
+        bookingId: assetPack.bookingId,
+        beforePhotos,
+        afterPhotos,
+        photoPayment,
+        closePdfBase64: pdfPack.dataUrl,
+        closePdfFileName: pdfPack.fileName,
+        closePdfMimeType: "application/pdf"
+      });
+    }else{
+      await postJson({ action:"closeNotify", token: TECH_TOKEN, bookingId: assetPack.bookingId });
+    }
+  }catch(e){
+    console.log("Background close asset upload failed", e);
+  }
+}
+
 function resetCloseForm(){
   $("workDone").value="";
   $("closeCode").value="";
@@ -928,6 +1176,7 @@ function resetCloseForm(){
   updateCloseBtn();
 }
 
+
 $("btnClose").addEventListener("click", async ()=>{
   const bid = $("bookingId").value.trim();
   if(!bid){ openModal("❌ Required","Booking ID missing"); return; }
@@ -935,10 +1184,29 @@ $("btnClose").addEventListener("click", async ()=>{
   try{
     $("btnClose").disabled = true;
     $("btnClose").textContent = "Closing...";
+    showCloseSubmitPopup();
 
     const workDone = $("workDone").value.trim();
+    const snapshot = makeCloseSnapshot();
+    const assetPack = {
+      bookingId: bid,
+      workDone,
+      snapshot,
+      beforeFiles: [],
+      afterFiles: [],
+      paymentFile: null
+    };
+
+    if(workDone === "YES"){
+      for(let i=1;i<=4;i++){
+        assetPack.beforeFiles.push($("before_" + i).files[0]);
+        assetPack.afterFiles.push($("after_" + i).files[0]);
+      }
+      if(needPayPhoto()) assetPack.paymentFile = $("photoPayment").files[0];
+    }
+
     const payload = {
-      action:"close",
+      action:"closeFast",
       token: TECH_TOKEN,
       bookingId: bid,
       workDone,
@@ -960,28 +1228,10 @@ $("btnClose").addEventListener("click", async ()=>{
       totalGeneration: $("totalGeneration").value.trim()
     };
 
-    if(workDone==="YES"){
-      const beforePhotos = [];
-      const afterPhotos = [];
-      for(let i=1;i<=4;i++){
-        beforePhotos.push(await fileToDataUrl($("before_" + i).files[0]));
-        afterPhotos.push(await fileToDataUrl($("after_" + i).files[0]));
-      }
-      payload.beforePhotos = beforePhotos;
-      payload.afterPhotos = afterPhotos;
-
-      if(needPayPhoto()){
-        payload.photoPayment = await fileToDataUrl($("photoPayment").files[0]);
-      }
-
-      const pdfPack = await generateClosePdfData();
-      payload.closePdfBase64 = pdfPack.dataUrl;
-      payload.closePdfFileName = pdfPack.fileName;
-      payload.closePdfMimeType = "application/pdf";
-    }
-
     const out = await postJson(payload);
     if(!out || !out.ok) throw new Error(out?.error || "Close failed");
+
+    hideCloseSubmitPopup();
 
     $("resultBox").classList.remove("hide");
     setText("rStatus", out.status || "OK");
@@ -992,12 +1242,7 @@ $("btnClose").addEventListener("click", async ()=>{
       setText("rFeedback","-");
     }
 
-    if(out.closePdfUrl || out.pdfUrl){
-      const pdfUrl = out.closePdfUrl || out.pdfUrl;
-      setHtml("rPDF", `<a href="${pdfUrl}" target="_blank" rel="noopener">${pdfUrl}</a>`);
-    }else{
-      setText("rPDF","-");
-    }
+    setText("rPDF", workDone === "YES" ? "Uploading in background..." : "-");
 
     if(out.waLinkCustomer){
       setHtml("rWA", `<a href="${out.waLinkCustomer}" target="_blank" rel="noopener">Open WhatsApp</a>`);
@@ -1006,19 +1251,23 @@ $("btnClose").addEventListener("click", async ()=>{
     }
 
     $("rWAText").value = out.waTextCustomer || "";
-    openModal("✅ Closed", "Booking closed successfully.");
+    openModal("✅ Closed", "Booking closed successfully. Photos/PDF and email will continue in background.");
+
+    uploadCloseAssetsInBackground(assetPack);
 
     resetCloseForm();
     $("details").classList.add("hide");
     await loadBookings();
 
   }catch(e){
+    hideCloseSubmitPopup();
     openModal("❌ Error", String(e.message || e));
   }finally{
     $("btnClose").textContent = "✅ Close Booking";
     updateCloseBtn();
   }
 });
+
 
 (async function init(){
   await checkVersionBeforeOpen();
